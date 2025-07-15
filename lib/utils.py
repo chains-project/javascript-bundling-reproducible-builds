@@ -152,7 +152,7 @@ def run_build_command_with_nix(nix_shell, command, builddir, env=None, verbose=F
 
     args = ["nix-shell", nix_shell,
             # "--keep-failed",
-            "-vvvvv",
+            # "-vvvvv",
             "--pure", ]
     if verbose:
         args += []
@@ -214,17 +214,28 @@ def build_in_workdir(workdir: str, log_shell: bool = False, verbose: bool = True
     preinstall_hashes = gen_hashes(builddir)
 
     git_log_out_bin = subprocess.run(
-        ["git", "log", "-p"], capture_output=True, check=True, cwd=builddir).stdout
+        ["git",
+            "log",
+            "-p",
+            "--date=iso"], capture_output=True, check=True, cwd=builddir).stdout
     try:
         git_log_out = git_log_out_bin.decode(errors="ignore")
     except Exception as e:
         print("could not decode", git_log_out_bin)
         raise e
     commit = git_log_out.split()[1]
+    date_row = git_log_out.split("\n")[2]
+
+    # TODO: time of day, timezone. Maybe epoch (--date=unix/--date=raw)
+    commit_date = date_row.split()[1]
+
+    print(f"only installing npm packages from before {commit_date}")
+
+    install_shell_args = shell_args + [f"--before={commit_date}"]
 
     # install_log = subprocess.run(
     #    ["npm", install_cmd]+shell_args, check=False, cwd=builddir, capture_output=True, env=env)
-    nix_install_cmd = f"npm {install_cmd} {' '.join(shell_args)}"
+    nix_install_cmd = f"npm {install_cmd} {' '.join(install_shell_args)}"
     install_log = run_build_command_with_nix(
         nix_shell=nix_shell_path, command=nix_install_cmd, builddir=builddir, env=env)
 
