@@ -8,6 +8,6 @@ let
       sha256 = "154rnp87ygkfr5jfxz2lamhzqm5blrz55flpy3p6l654vafd72pf";
 
     })
-    { };
+  ;
 in
 pinned_pkgs
