@@ -144,7 +144,7 @@ def fetch_github_archive(url, workdir, commit):
     url = f"{url}/archive/{commit}.tar.gz"
 
 
-def run_build_command_with_nix(nix_shell, command, builddir, env=None, verbose=False)->subprocess.CompletedProcess:
+def run_build_command_with_nix(nix_shell, command, builddir, env=None, verbose=False) -> subprocess.CompletedProcess:
     # command = command.split()
     # print("env", env)
     print("(nix) running command:", command)
@@ -167,7 +167,7 @@ def run_build_command_with_nix(nix_shell, command, builddir, env=None, verbose=F
     return out
 
 
-def run_build_command_with_podman(container_id, command, builddir, env=None, verbose=False)->subprocess.CompletedProcess:
+def run_build_command_with_podman(container_id, command, builddir, env=None, verbose=False) -> subprocess.CompletedProcess:
     # command = command.split()
     # print("env", env)
     print("command", command)
@@ -187,8 +187,9 @@ def run_build_command_with_podman(container_id, command, builddir, env=None, ver
     return out
 
 
-def build_in_workdir(workdir: str, log_shell: bool = False, verbose: bool = True, nix_shell_path: str = None,container_id:str = None) -> dict:
-    if nix_shell_path is None:
+def build_in_workdir(workdir: str, log_shell: bool = False, verbose: bool = True, nix_shell_path: str = None, container_id: str = None, build_in_container: bool = False) -> dict:
+
+    if (nix_shell_path is None) and (container_id is None) and (not build_in_container):
         nix_shell_path = os.path.join(os.path.abspath("."), "shell1.nix")
     builddir = os.path.join(workdir, "build")
     if log_shell:
@@ -236,9 +237,12 @@ def build_in_workdir(workdir: str, log_shell: bool = False, verbose: bool = True
     # install_log = subprocess.run(
     #    ["npm", install_cmd]+shell_args, check=False, cwd=builddir, capture_output=True, env=env)
     nix_install_cmd = f"npm {install_cmd} {' '.join(install_shell_args)}"
-    install_log = run_build_command_with_nix(
-        nix_shell=nix_shell_path, command=nix_install_cmd, builddir=builddir, env=env)
-
+    if (not build_in_container):
+        install_log = run_build_command_with_nix(
+            nix_shell=nix_shell_path, command=nix_install_cmd, builddir=builddir, env=env)
+    else:
+        install_log = run_build_command_with_podman(
+            container_id=container_id, command=nix_install_cmd, builddir=builddir, env=env, verbose=verbose)
     if install_log.returncode != 0:
         print(install_log.stdout.decode())
         print(install_log.stderr.decode())
@@ -251,9 +255,12 @@ def build_in_workdir(workdir: str, log_shell: bool = False, verbose: bool = True
     # script_out = subprocess.run(
     #     ["npm", "run"] + shell_args + [], check=False, capture_output=True, cwd=builddir, env=env)
     nix_npm_run_command = f"npm run {' '.join(shell_args)}"
-    script_out = run_build_command_with_nix(
-        nix_shell=nix_shell_path, command=nix_npm_run_command, builddir=builddir, env=env)
-
+    if (not build_in_container):
+        script_out = run_build_command_with_nix(
+            nix_shell=nix_shell_path, command=nix_npm_run_command, builddir=builddir, env=env)
+    else:
+        script_out = run_build_command_with_podman(
+            container_id=container_id, command=nix_npm_run_command, builddir=builddir, env=env, verbose=verbose)
     if script_out.returncode != 0:
         print(script_out.stdout.decode())
         print(script_out.stderr.decode())
@@ -274,9 +281,12 @@ def build_in_workdir(workdir: str, log_shell: bool = False, verbose: bool = True
         # build_log = subprocess.run(
         #    ["npm", "run"] + shell_args + ["build"], check=True, capture_output=True, cwd=builddir, env=env)
         nix_build_command = f"npm run {' '.join(shell_args)}"
-        build_log = run_build_command_with_nix(
-            nix_shell=nix_shell_path, command=nix_build_command, builddir=builddir, env=env)
-
+        if (not build_in_container):
+            build_log = run_build_command_with_nix(
+                nix_shell=nix_shell_path, command=nix_build_command, builddir=builddir, env=env)
+        else:
+            build_log = run_build_command_with_podman(
+                container_id=container_id, command=nix_build_command, builddir=builddir, env=env, verbose=verbose)
         if build_log.returncode != 0:
             print(build_log.stdout.decode())
             print(build_log.stderr.decode())
