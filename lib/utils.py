@@ -176,14 +176,18 @@ def run_build_command_with_podman(container_id, command, builddir, env=None, ver
     args = ["podman", "run",
             "--rm", "-it",
             "--network", "host",
+            "--volume", f"{builddir}:{builddir}",
+            "--workdir", builddir,
+            # hack until I figure out where to put logs
+            "--volume", f"{os.getenv('HOME')}/.npm/_logs/:/root/.npm/_logs/",
             container_id,
-            "-v", f"{builddir}:{builddir}"
+
             ]
     if verbose:
         args += []
     out = subprocess.run(
         args +
-        [f"{command}"], check=False, cwd=builddir, capture_output=True)
+        ["/bin/sh", "-c", f"{command}"], check=False, cwd=builddir, capture_output=True)
     return out
 
 
@@ -357,12 +361,12 @@ def mktemp() -> str:
     return tmpdir
 
 
-def build(url: str, commit: str = None, rmwork=True, log_shell=False, verbose: bool = True, tmpdir=None, nix_shell_path=None, ignore_completed_process=False) -> dict:
+def build(url: str, commit: str = None, rmwork=True, log_shell=False, verbose: bool = True, tmpdir=None, nix_shell_path=None, container_id: str = None, build_in_container: bool = False, ignore_completed_process=False) -> dict:
     if tmpdir is None:
         tmpdir = mktemp()
     checkout(url, tmpdir, commit)
     res = build_in_workdir(tmpdir, log_shell=log_shell,
-                           verbose=verbose, nix_shell_path=nix_shell_path)
+                           verbose=verbose, nix_shell_path=nix_shell_path, container_id=container_id, build_in_container=build_in_container)
     if rmwork:
         print(f"Removig {tmpdir}")
         subprocess.run(["rm", "-rf", tmpdir], check=True)
