@@ -3,9 +3,12 @@ import requests
 import json
 
 # GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
-
-with open(os.path.dirname(__file__) + "/token.txt", encoding="utf-8") as f:
-    GITHUB_TOKEN = f.read().strip()
+try:
+    with open(os.path.dirname(__file__) + "/token.txt", encoding="utf-8") as f:
+        GITHUB_TOKEN = f.read().strip()
+except FileNotFoundError:
+    # some functions don't need it
+    GITHUB_TOKEN = None
 
 # Things to remember:
 # http://docs.github.com/en/rest/search/search?apiVersion=2022-11-28
