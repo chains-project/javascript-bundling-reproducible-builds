@@ -3,7 +3,7 @@
 }:
 # https://ryantm.github.io/nixpkgs/builders/images/dockertools/
 let
-  node_image = pkgs.dockerTools.pullImage {
+  nodde_alpine_image = pkgs.dockerTools.pullImage {
     imageName = "node";
     # 24.4.1-alpine
     imageDigest = "sha256:820e86612c21d0636580206d802a726f2595366e1b867e564cbc652024151e8a";
@@ -17,7 +17,7 @@ let
     name = "rb-24.4.1-alpine";
     tag = "latest";
     # fromImage = "docker.io/library/archlinux";
-    fromImage = node_image;
+    fromImage = node_alpine_image;
 
     # https://ryantm.github.io/nixpkgs/builders/images/dockertools/
     #copyToRoot = pkgs.buildEnv {
