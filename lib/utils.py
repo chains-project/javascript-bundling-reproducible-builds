@@ -29,8 +29,14 @@ def gen_hashes(root: str) -> dict[str, str]:
         for f in files:
 
             full_path = os.path.join(rootdir, f)
-            with open(full_path, 'rb') as tmpf:
-                h = hashlib.sha256(tmpf.read()).hexdigest()
+            try:
+                with open(full_path, 'rb') as tmpf:
+                    h = hashlib.sha256(tmpf.read()).hexdigest()
+            except FileNotFoundError:
+                # this can happen if it is a broken symlink
+                # example: /tmp/tmp.dboAfl/build/test/development/app-dir/ssr-in-rsc/node_modules/random-react-library: broken symbolic link to /Users/sebbie/repos/next.js/test/development/app-dir/ssr-in-rsc/random-react-library/
+                # technically the empty string does not fully represent the state as it does not ta
+                h = ""
             if full_path in res:
                 raise Exception(
                     f"Tried to insert path {full_path} that already exists")
@@ -173,13 +179,16 @@ def run_build_command_with_podman(container_id, command, builddir, env=None, ver
     print("command", command)
     print("builddir", builddir)
 
+    logdir = f"{os.getenv('HOME')}/.npm/_logs/"
+    if not os.path.isdir(logdir):
+        os.makedirs(logdir)
     args = ["podman", "run",
             "--rm", "-it",
             "--network", "host",
             "--volume", f"{builddir}:{builddir}",
             "--workdir", builddir,
             # hack until I figure out where to put logs
-            "--volume", f"{os.getenv('HOME')}/.npm/_logs/:/root/.npm/_logs/",
+            "--volume", f"{logdir}:/root/.npm/_logs/",
             container_id,
 
             ]
