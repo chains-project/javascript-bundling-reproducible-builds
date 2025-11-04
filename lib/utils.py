@@ -37,6 +37,10 @@ def gen_hashes(root: str) -> dict[str, str]:
                 # example: /tmp/tmp.dboAfl/build/test/development/app-dir/ssr-in-rsc/node_modules/random-react-library: broken symbolic link to /Users/sebbie/repos/next.js/test/development/app-dir/ssr-in-rsc/random-react-library/
                 # technically the empty string does not fully represent the state as it does not ta
                 h = ""
+            except OSError:
+                # something is a symlink to itself?
+                # eg [Errno 40] Too many levels of symbolic links
+                h = ""
             if full_path in res:
                 raise Exception(
                     f"Tried to insert path {full_path} that already exists")
