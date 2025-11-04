@@ -49,21 +49,25 @@ def test_diffoscope(gh_repos=None):
         except KeyError as e:
             print("FAILED", repo)
             raise e
+        if url is None:
+            # eg stub packages
+            print(f"WARN: no url for name = {name}, index = {index}")
+            continue
         commit = None
         if "commit" in repo.keys():
             commit = repo["commit"]
         else:
             commit = None
-        fp = f"data/gh_diffoscope/{index}_{name}.json"
+        file_name = name.replace("/", "__slash__")
+        fp = f"data/gh_diffoscope/{index}_{file_name}.json"
         if os.path.exists(fp):
-            print("previously done")
+            print(f"previously done (in {fp})")
             continue
-        print(f"name = {name}, = {url}, commit = {commit}")
+        print(f"name = {name}, url = {url}, commit = {commit}")
         # url = example["url"]
         # commit = example["commit"]
 
         if not ((tmpdir1 is None) and (tmpdir2 is None)):
-
             subprocess.run(["rm", "-rf", tmpdir1], check=True)
             subprocess.run(["rm", "-rf", tmpdir2], check=True)
 
@@ -71,14 +75,28 @@ def test_diffoscope(gh_repos=None):
         tmpdir2 = utils.mktemp()
         shell1 = os.path.abspath("./shell1.nix")
         shell2 = os.path.abspath("./shell2.nix")
+        container_id_1 = "localhost/rb-lts-jod:latest"
+        container_id_2 = "rb-24.4.1-alpine:latest"
+        logged_commit = None
+        data1 = None
+        data2 = None
         try:
             data1 = utils.build(url=url,
-                                log_shell=False, rmwork=False, verbose=False, tmpdir=tmpdir1, nix_shell_path=shell1, ignore_completed_process=True)
+                                log_shell=False, rmwork=False, verbose=False, tmpdir=tmpdir1,
+                                # nix_shell_path=shell1,
+                                build_in_container=True,
+                                container_id=container_id_1,
+
+                                ignore_completed_process=True)
             logged_commit = data1["commit"]
             print(
                 f"build 1 succeded, now building {name} for a second time (url = {url}, commit={commit}, logged_commit = {logged_commit})")
             data2 = utils.build(url=url, commit=logged_commit,
-                                log_shell=False, rmwork=False, verbose=False, tmpdir=tmpdir2, nix_shell_path=shell2, ignore_completed_process=True)
+                                log_shell=False, rmwork=False, verbose=False, tmpdir=tmpdir2,
+                                # nix_shell_path=shell2,
+                                build_in_container=True,
+                                container_id=container_id_2,
+                                ignore_completed_process=True)
 
         except KeyboardInterrupt as e:
             raise e
@@ -89,16 +107,32 @@ def test_diffoscope(gh_repos=None):
             with open(fp, "w") as f:
                 json.dump("buildfail", f)
                 continue
+        except Exception as e:
+            logged_commit = None
+            data1 = None
+            print("(build) unknown excecption:", e)
+            print("package_data: ", repo)
+            raise e
+            # continue
         builddir1 = os.path.join(tmpdir1, "build")
         builddir2 = os.path.join(tmpdir2, "build")
+
         try:
             diff_data = utils.diffoscope_compare(builddir1, builddir2)
-        except:
+        except subprocess.CalledProcessError:
             logged_commit = None
             data1 = None
             with open(fp, "w") as f:
                 json.dump("diffail", f)
-                continue
+            continue
+        except KeyboardInterrupt as e:
+            raise e
+        except Exception as e:
+            logged_commit = None
+            data1 = None
+            print("(diffoscope), unknown excecption:", e)
+            continue
+
         data = {
             "build1": data1,
             "build2": data2,
@@ -118,8 +152,8 @@ def test_diffoscope(gh_repos=None):
 
         subprocess.run(["rm", "-rf", tmpdir1], check=True)
         subprocess.run(["rm", "-rf", tmpdir2], check=True)
-        if index > 100:
-            break
+        # if index > 100:
+        #     break
 
 
 def build_examples():
@@ -230,10 +264,17 @@ def build_gh_top():
 
 if __name__ == "__main__":
     # build_examples()
-    data = test_stats.get_n_detailed(20)
+
+    # n = 227679+1
+    n = 1000
+    data = test_stats.get_n_detailed(n)
+    # print(data)
     repos = [test_stats.filter_detailed_npm_package_data(x) for x in data]
     for index, _ in enumerate(repos):
         repos[index]["commit"] = None
+    
     # print(repos)
     # exit()
     test_diffoscope(repos)
+    # build_gh_top()
+    # test_diffoscope()
