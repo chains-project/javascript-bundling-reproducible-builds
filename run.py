@@ -23,13 +23,13 @@ def dbg_recursive_type(o, i="", key=None):
     if type(o) is dict:
         for k, v in o.items():
             print(i, k, type(v))
-            dbg_recursive_type(v, i=i+" ", key=k)
+            dbg_recursive_type(v, i=i + " ", key=k)
     elif type(o) is list:
         for v in o:
-            dbg_recursive_type(v, i+" ")
+            dbg_recursive_type(v, i + " ")
 
 
-def test_diffoscope(gh_repos=None):
+def test_diffoscope(gh_repos=None, diffoscope_subdir="gh_diffoscope"):
     # with open("data/examples.toml", "rb") as f:
     #     examples = tomllib.load(f)["pkgs"]
     if not os.path.isdir("data/gh_diffoscope"):
@@ -37,12 +37,14 @@ def test_diffoscope(gh_repos=None):
     if gh_repos is None:
         gh_repos = github_stats.get_fetched_data()
 
+    print(f"Will test {len(gh_repos)} repos")
+
     # example = examples[1]
     # for index, example in enumerate(examples):
     tmpdir1 = None
     tmpdir2 = None
     for index, repo in enumerate(gh_repos):
-        print(f"running for {index+1}:th time")
+        print(f"running for {index + 1}:th time")
         try:
             url = repo["clone_url"]
             name = repo["name"]
@@ -59,7 +61,10 @@ def test_diffoscope(gh_repos=None):
         else:
             commit = None
         file_name = name.replace("/", "__slash__")
-        fp = f"data/gh_diffoscope/{index}_{file_name}.json"
+        fdir = f"data/{diffoscope_subdir}"
+        if not os.path.isdir(fdir):
+            os.makedirs(fdir)
+        fp = f"{fdir}/{index}_{file_name}.json"
         if os.path.exists(fp):
             print(f"previously done (in {fp})")
             continue
@@ -68,9 +73,12 @@ def test_diffoscope(gh_repos=None):
         # commit = example["commit"]
 
         if not ((tmpdir1 is None) and (tmpdir2 is None)):
-            subprocess.run(["rm", "-rf", tmpdir1], check=True)
-            subprocess.run(["rm", "-rf", tmpdir2], check=True)
-
+            try:
+                subprocess.run(["rm", "-rf", tmpdir1], check=True)
+                subprocess.run(["rm", "-rf", tmpdir2], check=True)
+            except subprocess.CalledProcessError:
+                print(
+                    f"removing temprorary directories failed. This is probably a permission error")
         tmpdir1 = utils.mktemp()
         tmpdir2 = utils.mktemp()
         shell1 = os.path.abspath("./shell1.nix")
@@ -81,22 +89,33 @@ def test_diffoscope(gh_repos=None):
         data1 = None
         data2 = None
         try:
-            data1 = utils.build(url=url,
-                                log_shell=False, rmwork=False, verbose=False, tmpdir=tmpdir1,
-                                # nix_shell_path=shell1,
-                                build_in_container=True,
-                                container_id=container_id_1,
-
-                                ignore_completed_process=True)
+            data1 = utils.build(
+                url=url,
+                log_shell=False,
+                rmwork=False,
+                verbose=False,
+                tmpdir=tmpdir1,
+                # nix_shell_path=shell1,
+                build_in_container=True,
+                container_id=container_id_1,
+                ignore_completed_process=True,
+            )
             logged_commit = data1["commit"]
             print(
-                f"build 1 succeded, now building {name} for a second time (url = {url}, commit={commit}, logged_commit = {logged_commit})")
-            data2 = utils.build(url=url, commit=logged_commit,
-                                log_shell=False, rmwork=False, verbose=False, tmpdir=tmpdir2,
-                                # nix_shell_path=shell2,
-                                build_in_container=True,
-                                container_id=container_id_2,
-                                ignore_completed_process=True)
+                f"build 1 succeded, now building {name} for a second time (url = {url}, commit={commit}, logged_commit = {logged_commit})"
+            )
+            data2 = utils.build(
+                url=url,
+                commit=logged_commit,
+                log_shell=False,
+                rmwork=False,
+                verbose=False,
+                tmpdir=tmpdir2,
+                # nix_shell_path=shell2,
+                build_in_container=True,
+                container_id=container_id_2,
+                ignore_completed_process=True,
+            )
 
         except KeyboardInterrupt as e:
             raise e
@@ -137,6 +156,7 @@ def test_diffoscope(gh_repos=None):
             "build1": data1,
             "build2": data2,
             "diff": diff_data,
+            "repo": repo,
         }
         logged_commit = None
         data1 = None
@@ -164,12 +184,12 @@ def build_examples():
     # url = "https://github.com/lodash/lodash"
     # commit = "f299b52f39486275a9e6483b60a410e06520c538"
     start = 1
-    stop = start+10
+    stop = start + 10
     for example in examples[start:stop]:
         url = example["url"]
         commit = example["commit"]
-        data = utils.build(url,
-                           commit, log_shell=True, rmwork=True, verbose=False)
+        data = utils.build(url, commit, log_shell=True,
+                           rmwork=True, verbose=False)
 
         print("install stdout")
         print(utils.decode_or_none(data["install_log"].stdout))
@@ -184,7 +204,9 @@ def build_examples():
         print(data["hash"])
 
         diff = utils.compare_dirs(
-            data["stage_hashes"]["preinstall_hashes"], data["stage_hashes"]["post_hashes"])
+            data["stage_hashes"]["preinstall_hashes"],
+            data["stage_hashes"]["post_hashes"],
+        )
         utils.display_diff(diff, ignore=["node_modules/"])
         # print(data["preinstall_hashes"])
         print(data.keys())
@@ -200,7 +222,6 @@ def build_gh_top():
     print(f"will build {MAX} of {len(gh_repos)} pkgs")
     tmpdir_deleted = True
     for index, repo in enumerate(gh_repos):
-
         if not tmpdir_deleted:
             subprocess.run(["rm", "-rf", tmpdir], check=True)
         # print(repo)
@@ -218,8 +239,9 @@ def build_gh_top():
         tmpdir = utils.mktemp()
 
         try:
-            data = utils.build(url,
-                               log_shell=True, rmwork=True, verbose=False, tmpdir=tmpdir)
+            data = utils.build(
+                url, log_shell=True, rmwork=True, verbose=False, tmpdir=tmpdir
+            )
             print(data["hash"])
 
             # tmpdir = data["tmpdir"]
@@ -259,22 +281,27 @@ def build_gh_top():
             break
 
     print(
-        f"Finished with {succeded} succeded and {failed} failed builds ({filenotfound} file not found errors)")
+        f"Finished with {succeded} succeded and {failed} failed builds ({filenotfound} file not found errors)"
+    )
 
 
 if __name__ == "__main__":
     # build_examples()
 
     # n = 227679+1
-    n = 1000
-    data = test_stats.get_n_detailed(n)
-    # print(data)
-    repos = [test_stats.filter_detailed_npm_package_data(x) for x in data]
-    for index, _ in enumerate(repos):
-        repos[index]["commit"] = None
-    
+    if False:
+        n = 1000
+        data = test_stats.get_n_detailed(n)
+        # print(data)
+        repos = [test_stats.filter_detailed_npm_package_data(x) for x in data]
+        for index, _ in enumerate(repos):
+            repos[index]["commit"] = None
+
+    # repos = github_stats.get_fetched_data()
+    # print(len(repos))
+    # exit()
     # print(repos)
     # exit()
-    test_diffoscope(repos)
+    # test_diffoscope(repos)
     # build_gh_top()
-    # test_diffoscope()
+    test_diffoscope(diffoscope_subdir="github_projects")
