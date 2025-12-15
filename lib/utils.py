@@ -5,6 +5,15 @@ import hashlib
 import json
 
 
+def read_json(fp: str):
+    """
+    read json object from fp
+    """
+    with open(fp, "r", encoding="utf-8") as f:
+        res = json.load(f)
+    return res
+
+
 def decode_or_none(output):
     if output:
         return output.decode()
