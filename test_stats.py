@@ -162,6 +162,11 @@ def filter_detailed_npm_package_data(elem):
             commit = elem["gitHead"]
         elif "_rev" in elem.keys():
             commit = elem["_rev"]
+        
+        # Suggestion for improvement:
+        # elif "version" in elem.keys():
+        #     commit = elem["version"]        
+        
         else:
             commit = None
         name = elem["name"]
