@@ -1,4 +1,4 @@
-from parse import *
+from run import *
 
 if __name__ == "__main__":
     print(f"Testing reproducibility status of Github projects for which data has previously been fetched")

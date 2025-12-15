@@ -1,4 +1,4 @@
-from parse import *
+from run import *
 
 if __name__ == "__main__":
 
