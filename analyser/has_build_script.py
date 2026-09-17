@@ -18,7 +18,7 @@ def get_scripts(bdata_b):
     return scripts
 
 
-def has_build_sctipt(bdata):
+def has_build_script(bdata):
 
     s1 = get_scripts(bdata["build1"])
     s2 = get_scripts(bdata["build2"])
@@ -82,13 +82,16 @@ def count(d):
         t_data[k] = {"repro": 0, "nonrepro": 0}
         bs_data[k] = {"repro": 0, "nonrepro": 0}
 
+    t_data["any_bundler"] = {"repro": 0, "nonrepro": 0}
+    bs_data["any_bundler"] = {"repro": 0, "nonrepro": 0}
+
     for f in get_all_json_files(d):
         # print(f)
         data = analyse_utils.read_json(f)
         # print(type(data))
         if type(data) is str:
             continue
-        b = has_build_sctipt(data)
+        has_build_script_bool = has_build_script(data)
         diff = data["diff"]
         s = str(diff)
         assert (type(diff) is dict)
@@ -100,25 +103,39 @@ def count(d):
         bundlers_b2 = filter_bunder_deps(dev_deps2)
         # print(bundlers_b1, bundlers_b2)
         assert (str(sorted(bundlers_b1)) == str(sorted(bundlers_b2)))
+        has_any_bundler = len(bundlers_b1) > 0
+
         if reproducible:
-            t_data["total"]["repro"]+=1
+            t_data["total"]["repro"] += 1
+            if has_build_script_bool:
+                bs_data["total"]["repro"] += 1
+            if has_any_bundler:
+                t_data["any_bundler"]["repro"] += 1
+                if has_build_script_bool:
+                    bs_data["any_bundler"]["repro"] += 1
         else:
-            t_data["total"]["nonrepro"]+=1
+            t_data["total"]["nonrepro"] += 1
+            if has_build_script_bool:
+                bs_data["total"]["nonrepro"] += 1
+            if has_any_bundler:
+                t_data["any_bundler"]["nonrepro"] += 1
+                if has_build_script_bool:
+                    bs_data["any_bundler"]["nonrepro"] += 1
 
         for bunder in bundlers_b1:
             if reproducible:
-                t_data[bunder]["repro"]+=1
-                if has_build_sctipt:
-                    bs_data[bunder]["repro"]+=1
+                t_data[bunder]["repro"] += 1
+                if has_build_script_bool:
+                    bs_data[bunder]["repro"] += 1
             else:
 
-                t_data[bunder]["nonrepro"]+=1
-                if has_build_sctipt:
-                    bs_data[bunder]["nonrepro"]+=1
+                t_data[bunder]["nonrepro"] += 1
+                if has_build_script_bool:
+                    bs_data[bunder]["nonrepro"] += 1
 
         # print(f"diff: {len(list(diff.keys()))}")
         # print(f"{f}:\t{b}")
-        if b:
+        if has_build_script_bool:
             bs += 1
         total += 1
     # data = [analyse_utils.read_json(f) for f in files]
@@ -127,8 +144,8 @@ def count(d):
     return {
         "successful": total,
         "script": bs,
-        "t_data":t_data,
-        "bs_data":bs_data,
+        "t_data": t_data,
+        "bs_data": bs_data,
     }
 
 
