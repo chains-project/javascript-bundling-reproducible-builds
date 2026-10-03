@@ -131,7 +131,7 @@ def single_hash(hashes: dict) -> str:
     return h
 
 
-def checkout(url: str, workdir: str, commit: str = None):
+def checkout(url: str, workdir: str, commit: str | None = None):
     cmd1 = ["git", "clone",]
     if commit is None:
         cmd1.append("--depth=1")
@@ -149,7 +149,7 @@ def checkout(url: str, workdir: str, commit: str = None):
     if not (commit is None):
         cmd2 = ["git", "checkout", commit]
         cmd2_s = ' '.join(cmd2)
-        print(f"running {cmd2}")
+        print(f"running {cmd2_s}")
         try:
             subprocess.run(cmd2, check=True,
                            cwd=os.path.join(workdir, "build"))
@@ -383,10 +383,19 @@ def mktemp() -> str:
     return tmpdir
 
 
-def build(url: str, commit: str = None, rmwork=True, log_shell=False, verbose: bool = True, tmpdir=None, nix_shell_path=None, container_id: str = None, build_in_container: bool = False, ignore_completed_process=False) -> dict:
+def patch(tmpdir: str, patch_path: str) -> None:
+    assert os.path.isfile(patch_path)
+    subprocess.run(["patch", "-p1", "-i", patch_path],
+                   check=True, cwd=os.path.join(tmpdir, "build"))
+
+
+def build(url: str, commit: str | None = None, rmwork=True, log_shell=False, verbose: bool = True, tmpdir=None, nix_shell_path=None, container_id: str = None, build_in_container: bool = False, ignore_completed_process=False, patches: list | None = None) -> dict:
     if tmpdir is None:
         tmpdir = mktemp()
     checkout(url, tmpdir, commit)
+    if patches:
+        for patch_path in patches:
+            patch(tmpdir, patch_path)
     res = build_in_workdir(tmpdir, log_shell=log_shell,
                            verbose=verbose, nix_shell_path=nix_shell_path, container_id=container_id, build_in_container=build_in_container)
     if rmwork:

@@ -29,7 +29,7 @@ def dbg_recursive_type(o, i="", key=None):
             dbg_recursive_type(v, i + " ")
 
 
-def test_diffoscope(gh_repos=None, diffoscope_subdir="gh_diffoscope"):
+def test_diffoscope(gh_repos=None, diffoscope_subdir="gh_diffoscope",container_ids=None):
     # with open("data/examples.toml", "rb") as f:
     #     examples = tomllib.load(f)["pkgs"]
     if not os.path.isdir("data/gh_diffoscope"):
@@ -60,6 +60,12 @@ def test_diffoscope(gh_repos=None, diffoscope_subdir="gh_diffoscope"):
             commit = repo["commit"]
         else:
             commit = None
+        
+        if "patches" in repo.keys():
+            patches = repo["patches"]
+        else:
+            patches = None
+
         file_name = name.replace("/", "__slash__")
         fdir = f"data/{diffoscope_subdir}"
         if not os.path.isdir(fdir):
@@ -83,14 +89,22 @@ def test_diffoscope(gh_repos=None, diffoscope_subdir="gh_diffoscope"):
         tmpdir2 = utils.mktemp()
         shell1 = os.path.abspath("./shell1.nix")
         shell2 = os.path.abspath("./shell2.nix")
-        container_id_1 = "localhost/rb-lts-jod:latest"
-        container_id_2 = "rb-24.4.1-alpine:latest"
+
+        if container_ids:
+            container_id_1 = container_ids[0]
+            container_id_2 = container_ids[1]
+        else:
+            container_id_1 = "localhost/rb-lts-jod:latest"
+            container_id_2 = "rb-24.4.1-alpine:latest"
+        
         logged_commit = None
         data1 = None
         data2 = None
         try:
             data1 = utils.build(
                 url=url,
+                commit=commit,
+                patches=patches,
                 log_shell=False,
                 rmwork=False,
                 verbose=False,
@@ -107,6 +121,7 @@ def test_diffoscope(gh_repos=None, diffoscope_subdir="gh_diffoscope"):
             data2 = utils.build(
                 url=url,
                 commit=logged_commit,
+                patches=patches,
                 log_shell=False,
                 rmwork=False,
                 verbose=False,
