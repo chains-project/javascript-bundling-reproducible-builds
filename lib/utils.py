@@ -213,7 +213,7 @@ def run_build_command_with_podman(container_id, command, builddir, env=None, ver
     return out
 
 
-def build_in_workdir(workdir: str, log_shell: bool = False, verbose: bool = True, nix_shell_path: str = None, container_id: str = None, build_in_container: bool = False) -> dict:
+def build_in_workdir(workdir: str, log_shell: bool = False, verbose: bool = True, nix_shell_path: str | None = None, container_id: str | None = None, build_in_container: bool = False) -> dict:
 
     if (nix_shell_path is None) and (container_id is None) and (not build_in_container):
         nix_shell_path = os.path.join(os.path.abspath("."), "shell1.nix")
