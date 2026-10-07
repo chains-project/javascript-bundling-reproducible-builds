@@ -13,8 +13,8 @@ print(npm_data.keys())
 b1 = npm_data["build1"]
 b2 = npm_data["build2"]
 
-# print(b1["commit"])
-# print(b2["commit"])
+print(b1["commit"])
+print(b2["commit"])
 
 print(github_data["build1"]["commit"])
 print(github_data["build2"]["commit"])
