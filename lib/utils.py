@@ -213,7 +213,7 @@ def run_build_command_with_podman(container_id, command, builddir, env=None, ver
     return out
 
 
-def build_in_workdir(workdir: str, log_shell: bool = False, verbose: bool = True, nix_shell_path: str | None = None, container_id: str | None = None, build_in_container: bool = False) -> dict:
+def build_in_workdir(workdir: str, log_shell: bool = False, verbose: bool = True, nix_shell_path: str | None = None, container_id: str | None = None, build_in_container: bool = False, postinstall_patches: list | None = None) -> dict:
 
     if (nix_shell_path is None) and (container_id is None) and (not build_in_container):
         nix_shell_path = os.path.join(os.path.abspath("."), "shell1.nix")
@@ -277,6 +277,10 @@ def build_in_workdir(workdir: str, log_shell: bool = False, verbose: bool = True
 
     install_log_out = install_log.stdout.decode()
     install_log_err = install_log.stderr.decode()
+
+    if postinstall_patches:
+        for _p in postinstall_patches:
+            patch(workdir, _p)
 
     # script_out = subprocess.run(
     #     ["npm", "run"] + shell_args + [], check=False, capture_output=True, cwd=builddir, env=env)
@@ -383,21 +387,24 @@ def mktemp() -> str:
     return tmpdir
 
 
-def patch(tmpdir: str, patch_path: str) -> None:
-    assert os.path.isfile(patch_path)
-    subprocess.run(["patch", "-p1", "-i", patch_path],
-                   check=True, cwd=os.path.join(tmpdir, "build"))
+def patch(cwd: str, patch_path: dict) -> None:
+    p = os.path.join(cwd, patch_path["subdir"])
+    pp = patch_path["patch"]
+
+    assert os.path.isfile(pp)
+    subprocess.run(["patch", "-p1", "-i", pp],
+                   check=True, cwd=p)
 
 
-def build(url: str, commit: str | None = None, rmwork=True, log_shell=False, verbose: bool = True, tmpdir=None, nix_shell_path=None, container_id: str = None, build_in_container: bool = False, ignore_completed_process=False, patches: list | None = None) -> dict:
+def build(url: str, commit: str | None = None, rmwork=True, log_shell=False, verbose: bool = True, tmpdir=None, nix_shell_path=None, container_id: str | None = None, build_in_container: bool = False, ignore_completed_process=False, patches: list | None = None, postinstall_patches: list | None = None) -> dict:
     if tmpdir is None:
         tmpdir = mktemp()
     checkout(url, tmpdir, commit)
     if patches:
         for patch_path in patches:
-            patch(tmpdir, patch_path)
+            patch(os.path.join(tmpdir, "build"), patch_path)
     res = build_in_workdir(tmpdir, log_shell=log_shell,
-                           verbose=verbose, nix_shell_path=nix_shell_path, container_id=container_id, build_in_container=build_in_container)
+                           verbose=verbose, nix_shell_path=nix_shell_path, container_id=container_id, build_in_container=build_in_container, postinstall_patches=postinstall_patches)
     if rmwork:
         print(f"Removig {tmpdir}")
         subprocess.run(["rm", "-rf", tmpdir], check=True)
