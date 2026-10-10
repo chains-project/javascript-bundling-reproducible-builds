@@ -189,8 +189,8 @@ def run_build_command_with_nix(nix_shell, command, builddir, env=None, verbose=F
 def run_build_command_with_podman(container_id, command, builddir, env=None, verbose=False) -> subprocess.CompletedProcess:
     # command = command.split()
     # print("env", env)
-    print("command", command)
-    print("builddir", builddir)
+    print("(run_build_command_with_podman) command", command)
+    print("(run_build_command_with_podman) builddir", builddir)
 
     logdir = f"{os.getenv('HOME')}/.npm/_logs/"
     if not os.path.isdir(logdir):
@@ -207,9 +207,12 @@ def run_build_command_with_podman(container_id, command, builddir, env=None, ver
             ]
     if verbose:
         args += []
+
+    args += ["/bin/sh", "-c", f"{command}"]
+    print(f"(run_build_command_with_podman) running '{args}' in {builddir}")
     out = subprocess.run(
-        args +
-        ["/bin/sh", "-c", f"{command}"], check=False, cwd=builddir, capture_output=True)
+        args 
+        , check=False, cwd=builddir, capture_output=True)
     return out
 
 
@@ -280,7 +283,7 @@ def build_in_workdir(workdir: str, log_shell: bool = False, verbose: bool = True
 
     if postinstall_patches:
         for _p in postinstall_patches:
-            patch(workdir, _p)
+            patch(os.path.join(workdir, "build"), _p)
 
     # script_out = subprocess.run(
     #     ["npm", "run"] + shell_args + [], check=False, capture_output=True, cwd=builddir, env=env)
@@ -392,7 +395,9 @@ def patch(cwd: str, patch_path: dict) -> None:
     pp = patch_path["patch"]
 
     assert os.path.isfile(pp)
-    subprocess.run(["patch", "-p1", "-i", pp],
+    cmd = ["patch", "-p1", "-i", pp]
+    print(f"running '{cmd}' in {p}")
+    subprocess.run(cmd,
                    check=True, cwd=p)
 
 
