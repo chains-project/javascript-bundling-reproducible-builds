@@ -1,5 +1,4 @@
 
-import matplotlib.pyplot as plt
 import print_diff_results
 from lib import utils
 import json
@@ -28,7 +27,18 @@ def read_and_process_data(diff_datadir, maxcount=-1, ):
         }
 
     return res
+
+
 # data = read_and_process_data(diff_datadir=print_diff_results.NPM_DIFF_DATADIR)
+# with open("stats.data.npm.pickle", "wb") as f:
+#     pickle.dump(data, f)
+# exit()
+
+# data = read_and_process_data(diff_datadir=print_diff_results.GITHUB_DIFF_DATADIR)
+# with open("stats.data.github.pickle", "wb") as f:
+#     pickle.dump(data, f)
+# exit()
+
 # with open("stats.data.npm.json", "w") as f:
 #     json.dump(data, f)
 # exit()
@@ -37,41 +47,37 @@ def read_and_process_data(diff_datadir, maxcount=-1, ):
 #     data = json.load(f)
 
 
-# with open("stats.data.npm.pickle", "wb") as f:
-#     pickle.dump(data, f)
-
-with open("stats.data.npm.pickle", "rb") as f:
+# data_fp_pickle = "stats.data.npm.json"
+data_fp_pickle = "stats.data.github.json"
+with open(data_fp_pickle, "rb") as f:
     data = pickle.load(f)
 
 
 # exit()
-buildfails = 0
-difffails = 0
-reproducible = 0
-nonreproducible = 0
+def v2():
+    buildfails = 0
+    difffails = 0
+    reproducible = 0
+    nonreproducible = 0
 
-for dm in data:
-    d = dm["d"]
-    if type(d) is str:
-        if d == "buildfail":
-            buildfails += 1
-        elif d == "difffail":
-            difffails += 1
+    for dm in data:
+        d = dm["d"]
+        if type(d) is str:
+            if d == "buildfail":
+                buildfails += 1
+            elif d == "difffail":
+                difffails += 1
+            else:
+                raise Exception(f"unknown {d}")
+        elif type(d) is dict:
+            if not d:
+                reproducible += 1
+            else:
+                nonreproducible += 1
         else:
-            raise Exception(f"unknown {d}")
-    elif type(d) is dict:
-        if not d:
-            reproducible += 1
-        else:
-            nonreproducible += 1
-    else:
-        raise Exception(f"unknow type: {type(d)} for d = {d}")
+            raise Exception(f"unknow type: {type(d)} for d = {d}")
 
-print(f"buildfails={buildfails}")
-print(f"difffails={difffails}")
-print(f"reproducible={reproducible}")
-print(f"nonreproducible={nonreproducible}")
-
-
-plt.bar(["R", "NR", "fail"], [reproducible, nonreproducible, buildfails])
-plt.show()
+    print(f"buildfails={buildfails}")
+    print(f"difffails={difffails}")
+    print(f"reproducible={reproducible}")
+    print(f"nonreproducible={nonreproducible}")
