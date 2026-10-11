@@ -29,32 +29,30 @@ def read_and_process_data(diff_datadir, maxcount=-1, ):
     return res
 
 
-# data = read_and_process_data(diff_datadir=print_diff_results.NPM_DIFF_DATADIR)
-# with open("stats.data.npm.pickle", "wb") as f:
-#     pickle.dump(data, f)
-# exit()
+def write_npm():
+    data = read_and_process_data(diff_datadir=print_diff_results.NPM_DIFF_DATADIR)
+    # with open("stats.data.npm.pickle", "wb") as f:
+    #     pickle.dump(data, f)
+    with open("stats.data.npm.json", "w") as f:
+        json.dump(data, f)
 
-# data = read_and_process_data(diff_datadir=print_diff_results.GITHUB_DIFF_DATADIR)
-# with open("stats.data.github.pickle", "wb") as f:
-#     pickle.dump(data, f)
-# exit()
+def write_github():
+    data = read_and_process_data(diff_datadir=print_diff_results.GITHUB_DIFF_DATADIR)
+    with open("stats.data.github.json", "w") as f:
+        json.dump(data, f)
 
-# with open("stats.data.npm.json", "w") as f:
-#     json.dump(data, f)
-# exit()
 
 # with open("stats.data.npm.json", "r") as f:
 #     data = json.load(f)
 
 
-# data_fp_pickle = "stats.data.npm.json"
-data_fp_pickle = "stats.data.github.json"
-with open(data_fp_pickle, "rb") as f:
-    data = pickle.load(f)
 
 
-# exit()
-def v2():
+def analyse():
+    # data_fp_pickle = "stats.data.npm.json"
+    data_fp_pickle = "stats.data.github.json"
+    with open(data_fp_pickle, "rb") as f:
+        data = json.load(f)         
     buildfails = 0
     difffails = 0
     reproducible = 0
@@ -81,3 +79,11 @@ def v2():
     print(f"difffails={difffails}")
     print(f"reproducible={reproducible}")
     print(f"nonreproducible={nonreproducible}")
+
+
+def main():
+    write_npm()
+    write_github()
+
+if __name__=="__main__":
+    main()
