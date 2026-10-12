@@ -30,14 +30,17 @@ def read_and_process_data(diff_datadir, maxcount=-1, ):
 
 
 def write_npm():
-    data = read_and_process_data(diff_datadir=print_diff_results.NPM_DIFF_DATADIR)
+    data = read_and_process_data(
+        diff_datadir=print_diff_results.NPM_DIFF_DATADIR)
     # with open("stats.data.npm.pickle", "wb") as f:
     #     pickle.dump(data, f)
     with open("stats.data.npm.json", "w") as f:
         json.dump(data, f)
 
+
 def write_github():
-    data = read_and_process_data(diff_datadir=print_diff_results.GITHUB_DIFF_DATADIR)
+    data = read_and_process_data(
+        diff_datadir=print_diff_results.GITHUB_DIFF_DATADIR)
     with open("stats.data.github.json", "w") as f:
         json.dump(data, f)
 
@@ -46,13 +49,11 @@ def write_github():
 #     data = json.load(f)
 
 
-
-
 def analyse():
-    # data_fp_pickle = "stats.data.npm.json"
-    data_fp_pickle = "stats.data.github.json"
-    with open(data_fp_pickle, "rb") as f:
-        data = json.load(f)         
+    data_fp = "stats.data.npm.json"
+    data_fp = "stats.data.github.json"
+    with open(data_fp, "rb") as f:
+        data = json.load(f)
     buildfails = 0
     difffails = 0
     reproducible = 0
@@ -82,8 +83,10 @@ def analyse():
 
 
 def main():
-    write_npm()
-    write_github()
+    # write_npm()
+    # write_github()
+    analyse()
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     main()

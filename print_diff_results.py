@@ -57,28 +57,27 @@ def data2d(data: list) -> tuple[dict[str, list[str]], int]:
                     # print(detail.keys())
                     s1 = detail["source1"]
                     s2 = detail["source2"]
-                    
-                    
+
                     s1 = strip_path_prefix(s1, 3)
                     s2 = strip_path_prefix(s2, 3)
                     assert (s1 == s2)
 
                     if "details" in detail.keys():
                         details_d = detail["details"]
-                        
+
                     else:
                         details_d = None
 
                     if "unified_diff" in detail.keys():
                         unified = detail["unified_diff"]
-                        
+
                     else:
                         unified = None
 
                     diff_data = {
                         "path": d["fp"],
-                        "details":details_d,
-                        "unified_diff":unified
+                        "details": details_d,
+                        "unified_diff": unified
                     }
                     # print("s1, s2:", s1, s2)
                     if not s1 in diff2name.keys():
