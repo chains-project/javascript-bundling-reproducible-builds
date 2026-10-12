@@ -211,8 +211,7 @@ def run_build_command_with_podman(container_id, command, builddir, env=None, ver
     args += ["/bin/sh", "-c", f"{command}"]
     print(f"(run_build_command_with_podman) running '{args}' in {builddir}")
     out = subprocess.run(
-        args 
-        , check=False, cwd=builddir, capture_output=True)
+        args, check=False, cwd=builddir, capture_output=True)
     return out
 
 
@@ -310,10 +309,27 @@ def build_in_workdir(workdir: str, log_shell: bool = False, verbose: bool = True
             script = tmp[0]
             scripts.append(script)
 
+    pkg_json = f"{builddir}/package.json"
+
+    has_pkg_json = os.path.isfile(pkg_json)
+
+    if has_pkg_json:
+        with open(pkg_json, encoding="utf-8") as f:
+            pkg_json_data = json.load(f)
+            if "devDependencies" in pkg_json_data.keys():
+                dev_deps = pkg_json_data["devDependencies"]
+
+            if "dependencies" in pkg_json_data.keys():
+                deps = pkg_json_data["dependencies"]
+        if "scripts" in pkg_json_data.keys():
+            scripts = list(pkg_json_data["scripts"])
+    else:
+        pkg_json_data = None
+
     if "build" in scripts:
         # build_log = subprocess.run(
         #    ["npm", "run"] + shell_args + ["build"], check=True, capture_output=True, cwd=builddir, env=env)
-        nix_build_command = f"npm run {' '.join(shell_args)}"
+        nix_build_command = f"npm run {' '.join(shell_args)} build"
         if (not build_in_container):
             build_log = run_build_command_with_nix(
                 nix_shell=nix_shell_path, command=nix_build_command, builddir=builddir, env=env)
@@ -340,22 +356,6 @@ def build_in_workdir(workdir: str, log_shell: bool = False, verbose: bool = True
     post_hashes = gen_hashes(builddir)
     hashes = gen_hashes(output_dir)
     hash = single_hash(hashes)
-
-    dev_deps = None
-    deps = None
-    pkg_json = f"{builddir}/package.json"
-
-    has_pkg_json = os.path.isfile(pkg_json)
-    if has_pkg_json:
-        with open(pkg_json, encoding="utf-8") as f:
-            pkg_json_data = json.load(f)
-            if "devDependencies" in pkg_json_data.keys():
-                dev_deps = pkg_json_data["devDependencies"]
-
-            if "dependencies" in pkg_json_data.keys():
-                deps = pkg_json_data["dependencies"]
-    else:
-        pkg_json_data = None
 
     return {
         "builddir": builddir,
