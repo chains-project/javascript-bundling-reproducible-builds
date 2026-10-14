@@ -1,0 +1,80 @@
+diff --git a/lib/index.js b/lib/index.js
+index 8cf7433..b24dee6 100644
+--- a/lib/index.js
++++ b/lib/index.js
+@@ -22,14 +22,16 @@ var _schema = _interopRequireDefault(require("@istanbuljs/schema"));
+ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+ 
+ function getRealpath(n) {
+-  try {
+-    return (0, _fs.realpathSync)(n) ||
+-    /* istanbul ignore next */
+-    n;
+-  } catch (e) {
+-    /* istanbul ignore next */
+-    return n;
+-  }
++  // try {
++  //   return (0, _fs.realpathSync)(n) ||
++  //   /* istanbul ignore next */
++  //   n;
++  // } catch (e) {
++  //   /* istanbul ignore next */
++  //   return n;
++  // }
++  console.log("(getRealpath)" + n);
++  return n;
+ }
+ 
+ const memoize = new Map();
+@@ -68,6 +70,10 @@ function loadNycConfig(cwd, opts) {
+ }
+ 
+ function findConfig(opts) {
++
++  console.log("(findConfig) "+ (opts.cwd || process.env.NYC_CWD ||
++  /* istanbul ignore next */
++  process.cwd()));
+   const cwd = getRealpath(opts.cwd || process.env.NYC_CWD ||
+   /* istanbul ignore next */
+   process.cwd());
+@@ -109,6 +115,14 @@ function makeShouldSkip() {
+   };
+ }
+ 
++function stripCwd(path){
++  if (path.startsWith(process.cwd())) {
++    return path.substring(process.cwd().length + 1, path.length);
++  } else {
++    return path;
++  }
++}
++
+ var _default = (0, _helperPluginUtils.declare)(api => {
+   api.assertVersion(7);
+   const shouldSkip = makeShouldSkip();
+@@ -119,7 +133,8 @@ var _default = (0, _helperPluginUtils.declare)(api => {
+         enter(path) {
+           this.__dv__ = null;
+           this.nycConfig = findConfig(this.opts);
+-          const realPath = getRealpath(this.file.opts.filename);
++          console.log("(_default 1) , cwd = " +process.cwd()  +  ", this.file.opts.filename = "+this.file.opts.filename);
++          const realPath = getRealpath(stripCwd(this.file.opts.filename));
+ 
+           if (shouldSkip(realPath, this.nycConfig)) {
+             return;
+@@ -158,6 +173,7 @@ var _default = (0, _helperPluginUtils.declare)(api => {
+           const result = this.__dv__.exit(path);
+ 
+           if (this.opts.onCover) {
++            console.log("(default 2) " + this.file.opts.filename);
+             this.opts.onCover(getRealpath(this.file.opts.filename), result.fileCoverage);
+           }
+         }
+@@ -167,4 +183,4 @@ var _default = (0, _helperPluginUtils.declare)(api => {
+   };
+ });
+ 
+-exports.default = _default;
+\ No newline at end of file
++exports.default = _default;
