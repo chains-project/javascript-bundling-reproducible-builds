@@ -1,5 +1,11 @@
 
 import analyse_utils
+import sys
+import os
+sys.path.append(  os.path.dirname(__file__) +"/..")
+from lib import utils
+
+
 
 def all_diff():
     npm_stats = analyse_utils.read_json("stats.npm.json")
@@ -53,7 +59,37 @@ def ms():
     for hi in h:
         if ".husky" in hi:
             print(hi)
+
+def path_compare(data):
+    x = utils.compare_dirs(data["build1"]["stage_hashes"]["post_hashes"],data["build2"]["stage_hashes"]["post_hashes"])
+
+    x2={}
+    for k in x:
+        if k!="equal":
+            x2[k]=x[k]
+    print("cmp res ")
+    for k in x2:
+        for elem in x2[k]:
+            if not elem.startswith(".husky"):
+                continue
+            print(f"{k}: {elem}")
+
+def analyse_all_paths():
+
+    npm_stats = analyse_utils.read_json("stats.npm.json")
+    github_stats = analyse_utils.read_json("stats.github.json")
+    print(f"npm count:{len(npm_stats[".husky"])}, github count:{len(github_stats[".husky"])}")
+    husky_paths = npm_stats[".husky"]
+    husky_paths = github_stats[".husky"]
+    for p in husky_paths:
+        # print(p)
+        data = analyse_utils.read_json(p["path"])
+        path_compare(data)
+
 def main():
-    ms()
+    # ms()
+    # all_diff()
+    analyse_all_paths() # verdict: removed for .husky paths
+
 if __name__=="__main__":
     main()
