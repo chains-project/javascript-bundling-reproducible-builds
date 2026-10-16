@@ -1,0 +1,13 @@
+diff --git a/scripts/bundle.js b/scripts/bundle.js
+index 42b7d512..c1d6c381 100644
+--- a/scripts/bundle.js
++++ b/scripts/bundle.js
+@@ -82,7 +82,7 @@ function bundle(options) {
+                 }))
+             )
+             .pipe(header(license, {
+-                date: (new Date()).toUTCString().replace("GMT", "UTC").toLowerCase(),
++                date: (((Number.isInteger(Number(process.env["SOURCE_DATE_EPOCH"]))) ? new Date(Number(process.env["SOURCE_DATE_EPOCH"])) : new Date("2025-08-15"))).toUTCString().replace("GMT", "UTC").toLowerCase(),
+                 version: pkg.version
+             }))
+     .pipe(sourcemaps.write(".", { sourceRoot: "" }))

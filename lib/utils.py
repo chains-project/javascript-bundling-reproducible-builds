@@ -131,7 +131,7 @@ def single_hash(hashes: dict) -> str:
     return h
 
 
-def checkout(url: str, workdir: str, commit: str = None):
+def checkout(url: str, workdir: str, commit: str | None = None):
     cmd1 = ["git", "clone",]
     if commit is None:
         cmd1.append("--depth=1")
@@ -149,7 +149,7 @@ def checkout(url: str, workdir: str, commit: str = None):
     if not (commit is None):
         cmd2 = ["git", "checkout", commit]
         cmd2_s = ' '.join(cmd2)
-        print(f"running {cmd2}")
+        print(f"running {cmd2_s}")
         try:
             subprocess.run(cmd2, check=True,
                            cwd=os.path.join(workdir, "build"))
@@ -189,8 +189,8 @@ def run_build_command_with_nix(nix_shell, command, builddir, env=None, verbose=F
 def run_build_command_with_podman(container_id, command, builddir, env=None, verbose=False) -> subprocess.CompletedProcess:
     # command = command.split()
     # print("env", env)
-    print("command", command)
-    print("builddir", builddir)
+    print("(run_build_command_with_podman) command", command)
+    print("(run_build_command_with_podman) builddir", builddir)
 
     logdir = f"{os.getenv('HOME')}/.npm/_logs/"
     if not os.path.isdir(logdir):
@@ -207,13 +207,15 @@ def run_build_command_with_podman(container_id, command, builddir, env=None, ver
             ]
     if verbose:
         args += []
+
+    args += ["/bin/sh", "-c", f"{command}"]
+    print(f"(run_build_command_with_podman) running '{args}' in {builddir}")
     out = subprocess.run(
-        args +
-        ["/bin/sh", "-c", f"{command}"], check=False, cwd=builddir, capture_output=True)
+        args, check=False, cwd=builddir, capture_output=True)
     return out
 
 
-def build_in_workdir(workdir: str, log_shell: bool = False, verbose: bool = True, nix_shell_path: str = None, container_id: str = None, build_in_container: bool = False) -> dict:
+def build_in_workdir(workdir: str, log_shell: bool = False, verbose: bool = True, nix_shell_path: str | None = None, container_id: str | None = None, build_in_container: bool = False, postinstall_patches: list | None = None) -> dict:
 
     if (nix_shell_path is None) and (container_id is None) and (not build_in_container):
         nix_shell_path = os.path.join(os.path.abspath("."), "shell1.nix")
@@ -278,6 +280,10 @@ def build_in_workdir(workdir: str, log_shell: bool = False, verbose: bool = True
     install_log_out = install_log.stdout.decode()
     install_log_err = install_log.stderr.decode()
 
+    if postinstall_patches:
+        for _p in postinstall_patches:
+            patch(os.path.join(workdir, "build"), _p)
+
     # script_out = subprocess.run(
     #     ["npm", "run"] + shell_args + [], check=False, capture_output=True, cwd=builddir, env=env)
     nix_npm_run_command = f"npm run {' '.join(shell_args)}"
@@ -303,10 +309,27 @@ def build_in_workdir(workdir: str, log_shell: bool = False, verbose: bool = True
             script = tmp[0]
             scripts.append(script)
 
+    pkg_json = f"{builddir}/package.json"
+
+    has_pkg_json = os.path.isfile(pkg_json)
+
+    if has_pkg_json:
+        with open(pkg_json, encoding="utf-8") as f:
+            pkg_json_data = json.load(f)
+            if "devDependencies" in pkg_json_data.keys():
+                dev_deps = pkg_json_data["devDependencies"]
+
+            if "dependencies" in pkg_json_data.keys():
+                deps = pkg_json_data["dependencies"]
+        if "scripts" in pkg_json_data.keys():
+            scripts = list(pkg_json_data["scripts"])
+    else:
+        pkg_json_data = None
+
     if "build" in scripts:
         # build_log = subprocess.run(
         #    ["npm", "run"] + shell_args + ["build"], check=True, capture_output=True, cwd=builddir, env=env)
-        nix_build_command = f"npm run {' '.join(shell_args)}"
+        nix_build_command = f"npm run {' '.join(shell_args)} build"
         if (not build_in_container):
             build_log = run_build_command_with_nix(
                 nix_shell=nix_shell_path, command=nix_build_command, builddir=builddir, env=env)
@@ -333,22 +356,6 @@ def build_in_workdir(workdir: str, log_shell: bool = False, verbose: bool = True
     post_hashes = gen_hashes(builddir)
     hashes = gen_hashes(output_dir)
     hash = single_hash(hashes)
-
-    dev_deps = None
-    deps = None
-    pkg_json = f"{builddir}/package.json"
-
-    has_pkg_json = os.path.isfile(pkg_json)
-    if has_pkg_json:
-        with open(pkg_json, encoding="utf-8") as f:
-            pkg_json_data = json.load(f)
-            if "devDependencies" in pkg_json_data.keys():
-                dev_deps = pkg_json_data["devDependencies"]
-
-            if "dependencies" in pkg_json_data.keys():
-                deps = pkg_json_data["dependencies"]
-    else:
-        pkg_json_data = None
 
     return {
         "builddir": builddir,
@@ -383,12 +390,26 @@ def mktemp() -> str:
     return tmpdir
 
 
-def build(url: str, commit: str = None, rmwork=True, log_shell=False, verbose: bool = True, tmpdir=None, nix_shell_path=None, container_id: str = None, build_in_container: bool = False, ignore_completed_process=False) -> dict:
+def patch(cwd: str, patch_path: dict) -> None:
+    p = os.path.join(cwd, patch_path["subdir"])
+    pp = patch_path["patch"]
+
+    assert os.path.isfile(pp)
+    cmd = ["patch", "-p1", "-i", pp]
+    print(f"running '{cmd}' in {p}")
+    subprocess.run(cmd,
+                   check=True, cwd=p)
+
+
+def build(url: str, commit: str | None = None, rmwork=True, log_shell=False, verbose: bool = True, tmpdir=None, nix_shell_path=None, container_id: str | None = None, build_in_container: bool = False, ignore_completed_process=False, patches: list | None = None, postinstall_patches: list | None = None) -> dict:
     if tmpdir is None:
         tmpdir = mktemp()
     checkout(url, tmpdir, commit)
+    if patches:
+        for patch_path in patches:
+            patch(os.path.join(tmpdir, "build"), patch_path)
     res = build_in_workdir(tmpdir, log_shell=log_shell,
-                           verbose=verbose, nix_shell_path=nix_shell_path, container_id=container_id, build_in_container=build_in_container)
+                           verbose=verbose, nix_shell_path=nix_shell_path, container_id=container_id, build_in_container=build_in_container, postinstall_patches=postinstall_patches)
     if rmwork:
         print(f"Removig {tmpdir}")
         subprocess.run(["rm", "-rf", tmpdir], check=True)

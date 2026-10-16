@@ -1,8 +1,8 @@
 import json
 import sys
-
+from lib import utils
 def extract_diff(filepath_in,filepath_out):
-    with open(filepath1) as f:
+    with open(filepath_in) as f:
         czcli = json.load(f)
     
     print(type(czcli))
@@ -30,7 +30,9 @@ def diff_recurse(d,joined_path=""):
 def diff(filepath_in):
     with open(filepath_in) as f:
         data = json.load(f)
-    
+    print_diff(data)
+
+def print_diff(data):
     print(data.keys())
 
     res = diff_recurse(data)
@@ -41,8 +43,18 @@ def diff(filepath_in):
 
 def main():
     # example for the cz-cli gh repo, which shows interesting result
-    extract_diff("data/github_projects/298_cz-cli.json","298.diff.json")
-    diff("298.diff.json")
+    # extract_diff("data/github_projects/298_cz-cli.json","298.diff.json")
+    # diff("298.diff.json")
+
+    # extract_diff("data/github_projects/253_Fuse.json", "253_Fuse.json")
+    # diff("253_Fuse.json")
+    # p = "data/gh_diffoscope/551_jsdom.json"
+    # p = 'data/github_projects/216_jsdom.json'
+    p = "data/gh_diffoscope/561_nth-check.json"
+    # p = "data/gh_diffoscope/755_protobufjs.json"
+    d = utils.read_json(p)
+    print_diff(d["diff"])
+
 
 if __name__ == "__main__":
     main()

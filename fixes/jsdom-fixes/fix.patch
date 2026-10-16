@@ -1,0 +1,19 @@
+diff --git a/.npmrc b/.npmrc
+new file mode 100644
+index 00000000..b6f27f13
+--- /dev/null
++++ b/.npmrc
+@@ -0,0 +1 @@
++engine-strict=true
+diff --git a/package.json b/package.json
+index 2b231f0a..77ec3477 100644
+--- a/package.json
++++ b/package.json
+@@ -88,6 +88,6 @@
+   "main": "./lib/api.js",
+   "type": "commonjs",
+   "engines": {
+-    "node": "^20.19.0 || ^22.12.0 || >=24.0.0"
++    "node": ">=24.0.0 <25.0.0"
+   }
+ }

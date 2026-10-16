@@ -3,7 +3,7 @@
 }:
 # https://ryantm.github.io/nixpkgs/builders/images/dockertools/
 let
-  nodde_alpine_image = pkgs.dockerTools.pullImage {
+  node_alpine_image = pkgs.dockerTools.pullImage {
     imageName = "node";
     # 24.4.1-alpine
     imageDigest = "sha256:820e86612c21d0636580206d802a726f2595366e1b867e564cbc652024151e8a";
