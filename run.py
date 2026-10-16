@@ -29,13 +29,16 @@ def dbg_recursive_type(o, i="", key=None):
             dbg_recursive_type(v, i + " ")
 
 
-def test_diffoscope(gh_repos=None, diffoscope_subdir="gh_diffoscope",container_ids=None):
+def test_diffoscope(gh_repos=None, diffoscope_subdir="gh_diffoscope", container_ids=None, replace_commits=None, rmwork=True):
     # with open("data/examples.toml", "rb") as f:
     #     examples = tomllib.load(f)["pkgs"]
     if not os.path.isdir("data/gh_diffoscope"):
         os.makedirs("data/gh_diffoscope")
     if gh_repos is None:
         gh_repos = github_stats.get_fetched_data()
+
+    if replace_commits is None:
+        replace_commits = {}
 
     print(f"Will test {len(gh_repos)} repos")
 
@@ -60,7 +63,7 @@ def test_diffoscope(gh_repos=None, diffoscope_subdir="gh_diffoscope",container_i
             commit = repo["commit"]
         else:
             commit = None
-        
+
         if "patches" in repo.keys():
             patches = repo["patches"]
         else:
@@ -71,9 +74,14 @@ def test_diffoscope(gh_repos=None, diffoscope_subdir="gh_diffoscope",container_i
         if not os.path.isdir(fdir):
             os.makedirs(fdir)
         fp = f"{fdir}/{index}_{file_name}.json"
-        if os.path.exists(fp):
+        if os.path.exists(fp) and not fp in replace_commits:
             print(f"previously done (in {fp})")
             continue
+        elif fp in replace_commits:
+            commit = replace_commits[fp]
+            print(f"{fp} in replace_commits, will build commit {commit}")
+            # continue
+
         print(f"name = {name}, url = {url}, commit = {commit}")
         # url = example["url"]
         # commit = example["commit"]
@@ -96,23 +104,28 @@ def test_diffoscope(gh_repos=None, diffoscope_subdir="gh_diffoscope",container_i
         else:
             container_id_1 = "localhost/rb-lts-jod:latest"
             container_id_2 = "rb-24.4.1-alpine:latest"
-        
+
         logged_commit = None
         data1 = None
         data2 = None
+        if "postinstall_patches" in repo.keys():
+            postinstall_patches = repo["postinstall_patches"]
+        else:
+            postinstall_patches = None
         try:
             data1 = utils.build(
                 url=url,
                 commit=commit,
                 patches=patches,
                 log_shell=False,
-                rmwork=False,
+                rmwork=rmwork,
                 verbose=False,
                 tmpdir=tmpdir1,
                 # nix_shell_path=shell1,
                 build_in_container=True,
                 container_id=container_id_1,
                 ignore_completed_process=True,
+                postinstall_patches=postinstall_patches
             )
             logged_commit = data1["commit"]
             print(
@@ -123,13 +136,14 @@ def test_diffoscope(gh_repos=None, diffoscope_subdir="gh_diffoscope",container_i
                 commit=logged_commit,
                 patches=patches,
                 log_shell=False,
-                rmwork=False,
+                rmwork=rmwork,
                 verbose=False,
                 tmpdir=tmpdir2,
                 # nix_shell_path=shell2,
                 build_in_container=True,
                 container_id=container_id_2,
                 ignore_completed_process=True,
+                postinstall_patches=postinstall_patches
             )
 
         except KeyboardInterrupt as e:
@@ -301,11 +315,15 @@ def build_gh_top():
 
 
 if __name__ == "__main__":
+    # with open("tmp-all-remainder.json") as f:
+    #     replace_commits = json.load(f)
+    replace_commits = None
     # build_examples()
 
     # n = 227679+1
-    if False:
-        n = 1000
+    if True:
+        # n = 1000
+        n = 808
         data = test_stats.get_n_detailed(n)
         # print(data)
         repos = [test_stats.filter_detailed_npm_package_data(x) for x in data]
@@ -317,6 +335,7 @@ if __name__ == "__main__":
     # exit()
     # print(repos)
     # exit()
-    # test_diffoscope(repos)
+    # test_diffoscope(repos,replace_commits=replace_commits)
     # build_gh_top()
-    test_diffoscope(diffoscope_subdir="github_projects")
+    test_diffoscope(github_stats.get_fetched_data()[
+                    :300], diffoscope_subdir="github_projects", replace_commits=replace_commits)
