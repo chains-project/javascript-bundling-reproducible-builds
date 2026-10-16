@@ -69,11 +69,19 @@ def build_cz_cli(d=None):
     patch_path = os.path.join(os.path.dirname(
         __file__), "cz-cli-fixes", "fix.patch")
 
+    postinstall_patch_path = os.path.join(os.path.dirname(
+        __file__), "cz-cli-fixes",
+        #   "babel-plugin-istanbul.patch"
+        #   "i2.patch"
+        "i3.patch"
+    )
+
     repo = {
         "name": "cz-cli",
         "clone_url": "https://github.com/commitizen/cz-cli",
         "commit": "3c08866d9a8788c25798035f2dee7feaa6c03287",
-        "patches": [{"patch": patch_path, "subdir": ""}]
+        # "patches": [{"patch": patch_path, "subdir": ""}],
+        "postinstall_patches": [{"patch": postinstall_patch_path, "subdir": "node_modules/babel-plugin-istanbul"}],
     }
 
     # container_ids=(
@@ -86,14 +94,15 @@ def build_cz_cli(d=None):
     if not type(d) is str:
         d = repo["name"]
 
-    run.test_diffoscope([repo], d)
+    run.test_diffoscope([repo], d, rmwork=False)
 
 
 def main():
     d = "fixes-tmp"
-    build_jsdom(d)
-    build_probufjs(d)
-    build_cz_cli(d)
+    # build_jsdom(d)
+    # build_probufjs(d)
+    # build_cz_cli(d)
+    build_cz_cli(d + "-cz-cli-i3")
 
 
 if __name__ == "__main__":

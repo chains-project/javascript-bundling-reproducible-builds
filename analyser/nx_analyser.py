@@ -7,6 +7,9 @@ print(github_data)
 n = len("--/tmp/tmp.zMD8SddfgO/build/.nx--/tmp/tmp.zMD8SddfgO/build/")
 workspace_str = ".nx/workspace-data"
 for fp in data:
+    if type(fp) is dict:
+        fp=fp["path"]
+    # print(fp)
     pkg = analyse_utils.read_json(fp)
     diff  = pkg["diff"]
     pretty_diff = analyse_utils.diff_recurse(diff)

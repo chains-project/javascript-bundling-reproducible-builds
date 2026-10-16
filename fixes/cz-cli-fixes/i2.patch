@@ -1,0 +1,52 @@
+diff --git a/lib/index.js b/lib/index.js
+index 8cf7433..2195091 100644
+--- a/lib/index.js
++++ b/lib/index.js
+@@ -21,11 +21,20 @@ var _schema = _interopRequireDefault(require("@istanbuljs/schema"));
+ 
+ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+ 
++function stripCwd(path){
++  if (path.startsWith(process.cwd())) {
++    return path.substring(process.cwd().length + 1, path.length);
++  } else {
++    return path;
++  }
++}
++
+ function getRealpath(n) {
+   try {
+-    return (0, _fs.realpathSync)(n) ||
++	return stripCwd(n);
++    // return (0, _fs.realpathSync)(n) ||
+     /* istanbul ignore next */
+-    n;
++    // n;
+   } catch (e) {
+     /* istanbul ignore next */
+     return n;
+@@ -119,7 +128,7 @@ var _default = (0, _helperPluginUtils.declare)(api => {
+         enter(path) {
+           this.__dv__ = null;
+           this.nycConfig = findConfig(this.opts);
+-          const realPath = getRealpath(this.file.opts.filename);
++          const realPath = getRealpath(stripCwd(this.file.opts.filename));
+ 
+           if (shouldSkip(realPath, this.nycConfig)) {
+             return;
+@@ -158,7 +167,7 @@ var _default = (0, _helperPluginUtils.declare)(api => {
+           const result = this.__dv__.exit(path);
+ 
+           if (this.opts.onCover) {
+-            this.opts.onCover(getRealpath(this.file.opts.filename), result.fileCoverage);
++            this.opts.onCover(getRealpath(stripCwd(this.file.opts.filename), result.fileCoverage));
+           }
+         }
+ 
+@@ -167,4 +176,4 @@ var _default = (0, _helperPluginUtils.declare)(api => {
+   };
+ });
+ 
+-exports.default = _default;
+\ No newline at end of file
++exports.default = _default;
