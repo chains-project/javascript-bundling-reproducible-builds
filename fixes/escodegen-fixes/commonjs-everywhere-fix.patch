@@ -1,0 +1,13 @@
+diff --git a/lib/bundle.js b/lib/bundle.js
+index f87435c..4d55588 100644
+--- a/lib/bundle.js
++++ b/lib/bundle.js
+@@ -3,7 +3,7 @@ void function () {
+   var AMD_WRAPPER, amdWrap, ANONYMOUS_AMD_WRAPPER, canonicalise, esprima, exportAs, IIFE_WRAPPER, PRELUDE, PRELUDE_NODE, wrapFile;
+   esprima = require('esprima');
+   canonicalise = require('./canonicalise');
+-  PRELUDE_NODE = "\nvar process = function(){\n  var cwd = '/';\n  return {\n    title: 'browser',\n    version: '" + process.version + "',\n    browser: true,\n    env: {},\n    argv: [],\n    nextTick: global.setImmediate || function(fn){ setTimeout(fn, 0); },\n    cwd: function(){ return cwd; },\n    chdir: function(dir){ cwd = dir; }\n  };\n}();";
++  PRELUDE_NODE = "\nvar process = function(){\n  var cwd = '/';\n  return {\n    title: 'browser',\n    version: '" + "0.8.x || 0.9.x || 0.10.x" + "',\n    browser: true,\n    env: {},\n    argv: [],\n    nextTick: global.setImmediate || function(fn){ setTimeout(fn, 0); },\n    cwd: function(){ return cwd; },\n    chdir: function(dir){ cwd = dir; }\n  };\n}();";
+   PRELUDE = "function require(file, parentModule){\n  if({}.hasOwnProperty.call(require.cache, file))\n    return require.cache[file];\n\n  var resolved = require.resolve(file);\n  if(!resolved) throw new Error('Failed to resolve module ' + file);\n\n  var module$ = {\n    id: file,\n    require: require,\n    filename: file,\n    exports: {},\n    loaded: false,\n    parent: parentModule,\n    children: []\n  };\n  if(parentModule) parentModule.children.push(module$);\n  var dirname = file.slice(0, file.lastIndexOf('/') + 1);\n\n  require.cache[file] = module$.exports;\n  resolved.call(module$.exports, module$, module$.exports, dirname, file);\n  module$.loaded = true;\n  return require.cache[file] = module$.exports;\n}\n\nrequire.modules = {};\nrequire.cache = {};\n\nrequire.resolve = function(file){\n  return {}.hasOwnProperty.call(require.modules, file) ? require.modules[file] : void 0;\n};\nrequire.define = function(file, fn){ require.modules[file] = fn; };";
+   wrapFile = function (name, program) {
+     var wrapper, wrapperProgram;
