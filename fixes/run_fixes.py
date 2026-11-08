@@ -97,12 +97,45 @@ def build_cz_cli(d=None):
     run.test_diffoscope([repo], d, rmwork=False)
 
 
+def build_escodegen(d=None):
+
+    patch_path = os.path.join(os.path.dirname(
+        __file__), "escodegen-fixes", "fix.patch")
+
+    postinstall_patch_path = os.path.join(os.path.dirname(
+        __file__), "escodegen-fixes",
+        "commonjs-everywhere-fix.patch"
+    )
+
+    repo = {
+        "name": "escodegen",
+        "clone_url": "https://github.com/estools/escodegen",
+        "commit": "899cfdf5dc99de324fb6f1087aa9bab4d4bc2f00",
+        # "patches": [{"patch": patch_path, "subdir": ""}],
+        "postinstall_patches": [{"patch": postinstall_patch_path, "subdir": "node_modules/commonjs-everywhere"}],
+    }
+
+    # container_ids=(
+    #           "rb-24.4.1-alpine:latest",
+    #          "localhost/rb-lts-jod:latest",
+    # )
+
+    # assert os.path.isfile(patch_path)
+    assert os.path.isfile(postinstall_patch_path)
+
+    if not type(d) is str:
+        d = repo["name"]
+
+    run.test_diffoscope([repo], d, rmwork=False)
+
+
 def main():
     d = "fixes-tmp"
     # build_jsdom(d)
     # build_probufjs(d)
     # build_cz_cli(d)
-    build_cz_cli(d + "-cz-cli-i3")
+    # build_cz_cli(d + "-cz-cli-i3")
+    build_escodegen(d + "-escodegen")
 
 
 if __name__ == "__main__":
